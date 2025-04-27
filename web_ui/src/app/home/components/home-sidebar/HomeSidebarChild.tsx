@@ -20,22 +20,3 @@ export class SidebarChildVO {
         this.route = props.route;
     }
 }
-
-
-
-export function SidebarChild({
-    icon,
-    name,
-    isSelected,
-}: {
-    icon: string;
-    name: string;
-    isSelected: boolean;
-}) {
-    return (
-        <div className={`${styles.sidebarChildContainer} ${isSelected ? styles.sidebarSelected : styles.sidebarUnselected}`}>
-            <div className={`${styles.sidebarChildIcon}`}/>
-            <div>{name}</div>
-        </div>
-    );
-}

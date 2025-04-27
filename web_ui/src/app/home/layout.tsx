@@ -7,6 +7,8 @@ import HomeTitleBar from "@/app/home/components/home-titlebar/HomeTitleBar";
 import React, {useState} from "react";
 import {SidebarChildVO} from "@/app/home/components/home-sidebar/HomeSidebarChild";
 import { useRouter } from 'next/navigation';
+import { Button } from "@/components/ui/button";
+import { Sidebar, SidebarContent, SidebarFooter, SidebarGroup, SidebarHeader, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 
 export default function HomeLayout({
     children
@@ -20,17 +22,17 @@ export default function HomeLayout({
     }
 
     return (
-        <div className={`${styles.homeLayoutContainer}`}>
-            <HomeSidebar
+    <SidebarProvider className={styles.homeLayoutContainer}>
+     <HomeSidebar
              onSelectedChange={onSelectedChange}
             />
-            <div className={`${styles.main}`}>
-                <HomeTitleBar title={title}/>
-                {/* 主页面 */}
-                <div className={`${styles.mainContent}`}>
-                    {children}
-                </div>
-            </div>
+
+      <main className={styles.main}>
+      <HomeTitleBar title={title}/>
+      <div className={styles.mainContent}>
+        {children}
         </div>
+      </main>
+    </SidebarProvider>
     )
 }

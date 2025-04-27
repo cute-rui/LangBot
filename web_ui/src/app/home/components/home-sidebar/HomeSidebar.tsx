@@ -2,9 +2,21 @@
 
 import styles from "./HomeSidebar.module.css"
 import {useEffect, useState} from "react";
-import {SidebarChild, SidebarChildVO} from "@/app/home/components/home-sidebar/HomeSidebarChild";
+import {SidebarChildVO} from "@/app/home/components/home-sidebar/HomeSidebarChild";
 import {useRouter, usePathname, useSearchParams} from "next/navigation";
 import {sidebarConfigList} from "@/app/home/components/home-sidebar/sidbarConfigList";
+import {
+  Sidebar,
+  SidebarContent,
+  SidebarHeader,
+  SidebarGroup,
+  SidebarGroupLabel,
+  SidebarGroupContent,
+  SidebarMenu,
+  SidebarMenuItem,
+  SidebarMenuButton,
+  SidebarProvider,
+} from "@/components/ui/sidebar";
 
 // TODO 侧边导航栏要加动画
 export default function HomeSidebar({
@@ -29,7 +41,28 @@ export default function HomeSidebar({
         return () => console.log('HomeSidebar卸载');
     }, []);
 
-
+    const items = [
+        {
+          title: "Home",
+          url: "#",
+        },
+        {
+          title: "Inbox",
+          url: "#",
+        },
+        {
+          title: "Calendar",
+          url: "#",
+        },
+        {
+          title: "Search",
+          url: "#",
+        },
+        {
+          title: "Settings",
+          url: "#",
+        },
+      ]
 
     function handleChildClick(child: SidebarChildVO) {
         setSelectedChild(child)
@@ -66,42 +99,41 @@ export default function HomeSidebar({
         }
     }
 
-
     return (
-        <div className={`${styles.sidebarContainer}`}>
-            {/* LangBot、ICON区域 */}
-            <div className={`${styles.langbotIconContainer}`}>
-                {/* icon */}
-                <div className={`${styles.langbotIcon}`}>
-                    L
-                </div>
-                <div className={`${styles.langbotText}`}>
-                    Langbot
-                </div>
-            </div>
-            {/* 菜单列表，后期可升级成配置驱动 */}
-            <div>
-                {
-                    sidebarConfigList.map(config => {
-                        return (
-                            <div
-                                key={config.id}
-                                onClick={() => {
-                                    console.log('click:', config.id)
-                                    handleChildClick(config)
-                                }}
-                            >
-                                <SidebarChild
-                                    isSelected={selectedChild.id === config.id}
-                                    icon={config.icon}
-                                    name={config.name}
-                                />
-                            </div>
-                        )
-                    })
-                }
-
-            </div>
-        </div>
+        <Sidebar variant="sidebar" collapsible="none"  className={styles.sidebarContainer}>
+       {/* LangBot、ICON区域 */}
+       <SidebarHeader className={styles.langbotIconContainer}>
+                        {/* icon */}
+                        <div className={styles.langbotIcon}>
+                            L
+                        </div>
+                        <div className={styles.langbotText}>
+                            Langbot
+                        </div>
+                    </SidebarHeader>
+                    
+                    {/* 菜单列表 */}
+                    <SidebarContent>
+                        <SidebarMenu>
+                            {sidebarConfigList.map(config => (
+                                <SidebarMenuItem key={config.id}>
+                                    <SidebarMenuButton 
+                                        isActive={selectedChild.id === config.id}
+                                        onClick={() => {
+                                            console.log('click:', config.id)
+                                            handleChildClick(config)
+                                        }}
+                                        className={`${selectedChild.id === config.id ? styles.sidebarSelected : styles.sidebarUnselected}`}
+                                    >
+                                        <div className={styles.sidebarChildIcon}/>
+                                        <div>{config.name}</div>
+                                    </SidebarMenuButton>
+                                </SidebarMenuItem>
+                            ))}
+                        </SidebarMenu>
+                    </SidebarContent>
+    </Sidebar>
+                
     );
 }
+

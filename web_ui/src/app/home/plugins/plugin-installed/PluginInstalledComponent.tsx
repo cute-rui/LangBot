@@ -5,8 +5,16 @@ import {PluginCardVO} from "@/app/home/plugins/plugin-installed/PluginCardVO";
 import {useEffect, useState} from "react";
 import PluginCardComponent from "@/app/home/plugins/plugin-installed/plugin-card/PluginCardComponent";
 import styles from "@/app/home/plugins/plugins.module.css";
-import {Modal, Input} from "antd";
 import {GithubOutlined} from "@ant-design/icons";
+import {
+    Dialog,
+    DialogContent,
+    DialogHeader,
+    DialogTitle,
+    DialogFooter,
+} from "@/components/ui/dialog";
+import {Input} from "@/components/ui/input";
+import {Button} from "@/components/ui/button";
 
 export default function PluginInstalledComponent () {
     const [pluginList, setPluginList] = useState<PluginCardVO[]>([])
@@ -68,37 +76,40 @@ export default function PluginInstalledComponent () {
     }
     return (
         <div className={`${styles.pluginListContainer}`}>
-            <Modal
-                title={
-                    <div className={`${styles.modalTitle}`}>
-                        <GithubOutlined
-                            style={{
-                                fontSize: '30px',
-                                marginRight: '20px'
-                            }}
-                            type="setting"
+            <Dialog open={modalOpen} onOpenChange={setModalOpen}>
+                <DialogContent className="sm:max-w-[500px]">
+                    <DialogHeader>
+                        <DialogTitle className="flex items-center">
+                            <GithubOutlined
+                                style={{
+                                    fontSize: '30px',
+                                    marginRight: '20px'
+                                }}
+                                type="setting"
+                            />
+                            <span>从 GitHub 安装插件</span>
+                        </DialogTitle>
+                    </DialogHeader>
+                    <div className={`${styles.modalBody}`}>
+                        <div className="mb-4">
+                            目前仅支持从 GitHub 安装
+                        </div>
+                        <Input
+                            placeholder="请输入插件的Github链接"
+                            value={githubURL}
+                            onChange={(e) => setGithubURL(e.target.value)}
                         />
-                        <span>从 GitHub 安装插件</span>
                     </div>
-                }
-                centered
-                open={modalOpen}
-                onOk={() => handleModalConfirm()}
-                onCancel={() => setModalOpen(false)}
-                width={500}
-                destroyOnClose={true}
-            >
-                <div className={`${styles.modalBody}`}>
-                    <div>
-                        目前仅支持从 GitHub 安装
-                    </div>
-                    <Input
-                        placeholder="请输入插件的Github链接"
-                        value={githubURL}
-                        onChange={(e) => setGithubURL(e.target.value)}
-                    />
-                </div>
-            </Modal>
+                    <DialogFooter>
+                        <Button variant="outline" onClick={() => setModalOpen(false)}>
+                            取消
+                        </Button>
+                        <Button onClick={handleModalConfirm}>
+                            确定
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
             {
                 pluginList.map((vo, index) => {
                     return <div key={index}>

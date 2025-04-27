@@ -1,30 +1,30 @@
 import {IDynamicFormItemConfig} from "@/app/home/components/dynamic-form/DynamicFormItemConfig";
-import {Form, FormInstance} from "antd";
 import DynamicFormItemComponent from "@/app/home/components/dynamic-form/DynamicFormItemComponent";
+import { UseFormReturn } from "react-hook-form";
+import { Form } from "@/components/ui/form";
 
 export default function DynamicFormComponent({
     form,
     itemConfigList,
     onSubmit,
 }: {
-    form: FormInstance<object>
+    form: UseFormReturn<any>
     itemConfigList: IDynamicFormItemConfig[]
     onSubmit?: (val: object) => unknown
 }) {
     return (
-        <Form
-            form={form}
-            onFinish={onSubmit}
-            layout={"vertical"}
-        >
-            {
-                itemConfigList.map(config =>
-                    <DynamicFormItemComponent
-                        key={config.id}
-                        config={config}
-                    />
-                )
-            }
+        <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit || (() => {}))}>
+                {
+                    itemConfigList.map(config =>
+                        <DynamicFormItemComponent
+                            key={config.id}
+                            config={config}
+                            form={form}
+                        />
+                    )
+                }
+            </form>
         </Form>
     )
 }

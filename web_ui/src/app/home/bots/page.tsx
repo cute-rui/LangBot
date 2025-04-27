@@ -5,17 +5,19 @@ import styles from "./botConfig.module.css";
 import EmptyAndCreateComponent from "@/app/home/components/empty-and-create-component/EmptyAndCreateComponent";
 import {useRouter} from "next/navigation";
 import {BotCardVO} from "@/app/home/bots/components/bot-card/BotCardVO";
-import {Modal, notification, Spin} from "antd";
 import BotForm from "@/app/home/bots/components/bot-form/BotForm";
 import BotCard from "@/app/home/bots/components/bot-card/BotCard";
 import CreateCardComponent from "@/app/infra/basic-component/create-card-component/CreateCardComponent"
 import {httpClient} from "@/app/infra/http/HttpClient";
 import { Bot } from "@/app/infra/api/api-types";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { toast } from "sonner";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export default function BotConfigPage() {
     const router = useRouter();
     const [pageShowRule, setPageShowRule] = useState<BotConfigPageShowRule>(BotConfigPageShowRule.NO_BOT)
-    const [modalOpen, setModalOpen] = useState<boolean>(false);
+    const [dialogOpen, setDialogOpen] = useState<boolean>(false);
     const [botList, setBotList] = useState<BotCardVO[]>([])
     const [isEditForm, setIsEditForm] = useState(false)
     const [nowSelectedBotCard, setNowSelectedBotCard] = useState<BotCardVO>()
@@ -23,7 +25,6 @@ export default function BotConfigPage() {
 
 
     useEffect(() => {
-        // TODO：补齐加载转圈逻辑
         setIsLoading(true)
         checkHasLLM().then((hasLLM) => {
             if (hasLLM) {
@@ -35,13 +36,8 @@ export default function BotConfigPage() {
                     }
                     setBotList(botList)
                 }).catch((err) => {
-                    // TODO error toast
-                    //console.error("get bot list error (useEffect)", err)
-                    // HACK: need refactor to hook mode Notification, but it's not working under render
-                    notification.error({
-                        message: "获取机器人列表失败",
+                    toast.error("获取机器人列表失败", {
                         description: err.message,
-                        placement: "bottomRight",
                     })
                 }).finally(() => {
                     setIsLoading(false)
@@ -74,8 +70,6 @@ export default function BotConfigPage() {
                 })
                 resolve(botList)
             }).catch((err) => {
-                // TODO error toast
-                //console.error("get bot list error", err)
                 reject(err)
             })
         })
@@ -84,7 +78,7 @@ export default function BotConfigPage() {
     function handleCreateBotClick() {
         setIsEditForm(false)
         setNowSelectedCard(undefined)
-        setModalOpen(true);
+        setDialogOpen(true);
     }
 
     function setNowSelectedCard(cardVO: BotCardVO | undefined) {
@@ -95,28 +89,38 @@ export default function BotConfigPage() {
         setIsEditForm(true)
         setNowSelectedCard(cardVO)
         console.log("set now vo", cardVO)
-        setModalOpen(true)
+        setDialogOpen(true)
+    }
+
+    if (isLoading) {
+        return (
+            <div className="flex items-center justify-center w-full h-[50vh]">
+                <div className="space-y-4">
+                    <Skeleton className="h-12 w-48" />
+                    <div className="flex space-x-4">
+                        <Skeleton className="h-32 w-32" />
+                        <Skeleton className="h-32 w-32" />
+                        <Skeleton className="h-32 w-32" />
+                    </div>
+                </div>
+            </div>
+        )
     }
 
     return (
-        <Spin spinning={isLoading}>
         <div className={styles.configPageContainer}>
-            <Modal
-                title={isEditForm ? "编辑机器人" : "创建机器人"}
-                centered
-                open={modalOpen}
-                onOk={() => setModalOpen(false)}
-                onCancel={() => setModalOpen(false)}
-                width={700}
-                footer={null}
-                destroyOnClose={true}
-            >
-                <BotForm
-                    initBotId={nowSelectedBotCard?.id}
-                    onFormSubmit={() => setIsEditForm(false)}
-                    onFormCancel={() => setModalOpen(false)}
-                />
-            </Modal>
+            <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+                <DialogContent className="sm:max-w-[700px]">
+                    <DialogHeader>
+                        <DialogTitle>{isEditForm ? "编辑机器人" : "创建机器人"}</DialogTitle>
+                    </DialogHeader>
+                    <BotForm
+                        initBotId={nowSelectedBotCard?.id}
+                        onFormSubmit={() => setIsEditForm(false)}
+                        onFormCancel={() => setDialogOpen(false)}
+                    />
+                </DialogContent>
+            </Dialog>
             {pageShowRule === BotConfigPageShowRule.NO_LLM &&
                 <EmptyAndCreateComponent
                     title={"需要先创建大模型才能配置机器人哦～"}
@@ -158,7 +162,6 @@ export default function BotConfigPage() {
              </div>
             }
         </div>
-        </Spin>
     )
 }
 

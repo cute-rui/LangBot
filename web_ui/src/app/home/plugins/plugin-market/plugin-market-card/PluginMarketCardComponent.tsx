@@ -1,40 +1,38 @@
-import styles from "./pluginMarketCard.module.css"
 import {GithubOutlined, StarOutlined} from '@ant-design/icons';
 import {PluginMarketCardVO} from "@/app/home/plugins/plugin-market/plugin-market-card/PluginMarketCardVO";
-import {Button} from "antd";
+import {Button} from "@/components/ui/button";
+import {
+    Card,
+    CardHeader,
+    CardContent,
+    CardFooter,
+} from "@/components/ui/card";
 
 export default function PluginMarketCardComponent({
      cardVO
 }: {
     cardVO: PluginMarketCardVO
 }) {
-
-
     function handleInstallClick (pluginId: string) {
         console.log("Install plugin: ", pluginId)
     }
 
     return (
-        <div className={`${styles.cardContainer}`}>
-            {/*  header  */}
-            <div className={`${styles.cardHeader}`}>
-                {/* left author */}
-                <div className={`${styles.fontGray}`}>{cardVO.author}</div>
-                {/*  right icon */}
+        <Card className="w-[360px] h-[140px] shadow-sm overflow-hidden flex flex-col p-0 gap-0">
+            <CardHeader className="p-3 pb-0 flex flex-row items-center justify-between">
+                <div className="text-[#6C6C6C] text-sm">{cardVO.author}</div>
                 <GithubOutlined
                     style={{fontSize: '26px'}}
                     type="setting"
                 />
-            </div>
-            {/*  content  */}
-            <div className={`${styles.cardContent}`}>
-                <div className={`${styles.boldFont}`}>{cardVO.name}</div>
-                <div className={`${styles.fontGray}`}>{cardVO.description}</div>
-            </div>
-            {/*  footer  */}
-            <div className={`${styles.cardFooter}`}>
-                <div className={`${styles.linkSettingContainer}`}>
-                    <div className={`${styles.link}`}>
+            </CardHeader>
+            <CardContent className="p-3 pt-1 pb-0 flex-grow">
+                <div className="text-xl font-bold">{cardVO.name}</div>
+                <div className="text-[#6C6C6C] text-sm">{cardVO.description}</div>
+            </CardContent>
+            <CardFooter className="p-3 pt-0 mt-auto flex justify-between items-center">
+                <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-1 text-blue-600">
                         <StarOutlined
                             style={{fontSize: '22px'}}
                         />
@@ -42,15 +40,15 @@ export default function PluginMarketCardComponent({
                     </div>
                 </div>
                 <Button
-                    type="primary"
-                    size={"small"}
+                    variant="default"
+                    size="sm"
                     onClick={() => {
                         handleInstallClick(cardVO.pluginId)
                     }}
                 >
                     安装
                 </Button>
-            </div>
-        </div>
+            </CardFooter>
+        </Card>
     );
 }

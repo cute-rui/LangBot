@@ -1,5 +1,4 @@
 import {BotFormEntity, IBotFormEntity} from "@/app/home/bots/components/bot-form/BotFormEntity";
-import {Button, Form, Input, Select, Space} from "antd";
 import {useEffect, useState} from "react";
 import {IChooseAdapterEntity} from "@/app/home/bots/components/bot-form/ChooseAdapterEntity";
 import {
@@ -12,7 +11,30 @@ import DynamicFormComponent from "@/app/home/components/dynamic-form/DynamicForm
 import {ICreateLLMField} from "@/app/home/models/ICreateLLMField";
 import {httpClient} from "@/app/infra/http/HttpClient";
 import { Bot } from "@/app/infra/api/api-types";
-import { notification } from "antd";
+import { toast } from "sonner";
+import { useForm } from "react-hook-form";
+
+
+//TODO: Refactored but not validated
+// Shadcn UI导入
+import { 
+    Form, 
+    FormControl, 
+    FormDescription, 
+    FormField, 
+    FormItem, 
+    FormLabel, 
+    FormMessage 
+} from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import { 
+    Select, 
+    SelectContent, 
+    SelectItem, 
+    SelectTrigger, 
+    SelectValue 
+} from "@/components/ui/select";
+import { Button } from "@/components/ui/button";
 
 
 export default function BotForm({
@@ -25,9 +47,15 @@ export default function BotForm({
     onFormCancel: (value: IBotFormEntity) => void;
 }) {
     const [adapterNameToDynamicConfigMap, setAdapterNameToDynamicConfigMap] = useState(new Map<string, IDynamicFormItemConfig[]>())
-    const [form] = Form.useForm<IBotFormEntity>();
+    const form = useForm<IBotFormEntity>({
+        defaultValues: {
+            name: "",
+            description: "",
+            adapter: ""
+        }
+    });
     const [showDynamicForm, setShowDynamicForm] = useState<boolean>(false)
-    const [dynamicForm] = Form.useForm();
+    const dynamicForm = useForm();
     const [adapterNameList, setAdapterNameList] = useState<IChooseAdapterEntity[]>([])
     const [dynamicFormConfigList, setDynamicFormConfigList] = useState<IDynamicFormItemConfig[]>([])
     const [isLoading, setIsLoading] = useState<boolean>(false)
@@ -72,12 +100,14 @@ export default function BotForm({
         // 拉取初始化表单信息
         if (initBotId) {
             getBotFieldById(initBotId).then(val => {
-                form.setFieldsValue(val)
+                form.setValue("name", val.name);
+                form.setValue("description", val.description);
+                form.setValue("adapter", val.adapter);
                 // TODO 这里有个bug，adapter config 并没有被设置到表单中，表单一直都只显示默认值
                 handleAdapterSelect(val.adapter)
             })
         } else {
-            form.resetFields()
+            form.reset();
         }
         setAdapterNameToDynamicConfigMap(adapterNameToDynamicConfigMap)
     }
@@ -114,11 +144,11 @@ export default function BotForm({
     }
 
     function handleSubmitButton() {
-        form.submit()
+        form.handleSubmit(handleFormFinish)();
     }
 
     function handleFormFinish(value: IBotFormEntity) {
-        dynamicForm.submit()
+        dynamicForm.handleSubmit(onDynamicFormSubmit)();
     }
 
     // 只有通过外层固定表单验证才会走到这里，真正的提交逻辑在这里
@@ -127,60 +157,52 @@ export default function BotForm({
         console.log('setloading',  true)
         if (initBotId) {
             // 编辑提交
-            console.log('submit edit', form.getFieldsValue() ,value)
+            console.log('submit edit', form.getValues() ,value)
             let updateBot: Bot = {
                 uuid: initBotId,
-                name: form.getFieldsValue().name,
-                description: form.getFieldsValue().description,
-                adapter: form.getFieldsValue().adapter,
+                name: form.getValues().name,
+                description: form.getValues().description,
+                adapter: form.getValues().adapter,
                 adapter_config: value
             }
             httpClient.updateBot(initBotId, updateBot).then(res => {
-                // TODO success toast
-                notification.success({
-                    message: "更新成功",
+                toast.success("更新成功", {
                     description: "机器人更新成功"
-                })
+                });
             }).catch(err => {
-                // TODO error toast
-                notification.error({
-                    message: "更新失败",
+                toast.error("更新失败", {
                     description: "机器人更新失败"
-                })
+                });
             }).finally(() => {
                 setIsLoading(false)
-                form.resetFields()
-                dynamicForm.resetFields()
+                form.reset();
+                dynamicForm.reset();
             })
         } else {
             // 创建提交
-            console.log('submit create', form.getFieldsValue() ,value)
+            console.log('submit create', form.getValues() ,value)
             let newBot: Bot = {
-                name: form.getFieldsValue().name,
-                description: form.getFieldsValue().description,
-                adapter: form.getFieldsValue().adapter,
+                name: form.getValues().name,
+                description: form.getValues().description,
+                adapter: form.getValues().adapter,
                 adapter_config: value
             }
             httpClient.createBot(newBot).then(res => {
-                // TODO success toast
-                notification.success({
-                    message: "创建成功",
+                toast.success("创建成功", {
                     description: "机器人创建成功"
-                })
+                });
                 console.log(res)
             }).catch(err => {
-                // TODO error toast
-                notification.error({
-                    message: "创建失败",
+                toast.error("创建失败", {
                     description: "机器人创建失败"
-                })
+                });
             }).finally(() => {
                 setIsLoading(false)
-                form.resetFields()
-                dynamicForm.resetFields()
+                form.reset();
+                dynamicForm.reset();
             })
         }
-        onFormSubmit(form.getFieldsValue())
+        onFormSubmit(form.getValues())
         setShowDynamicForm(false)
         console.log('setloading',  false)
         // TODO 刷新bot列表
@@ -188,53 +210,90 @@ export default function BotForm({
     }
 
     function handleSaveButton() {
-        form.submit()
+        form.handleSubmit(handleFormFinish)();
     }
 
     return (
         <div>
-            <Form
-                form={form}
-                labelCol={{span: 5}}
-                wrapperCol={{span: 18}}
-                layout='vertical'
-                onFinish={handleFormFinish}
-                disabled={isLoading}
-            >
-                <Form.Item<IBotFormEntity>
-                    label={"机器人名称"}
-                    name={"name"}
-                    rules={[{required: true, message: "该项为必填项哦～"}]}
-                >
-                    <Input
-                        placeholder="为机器人取个好听的名字吧～"
-                        style={{width: 260}}
-                    ></Input>
-                </Form.Item>
-
-                <Form.Item<IBotFormEntity>
-                    label={"描述"}
-                    name={"description"}
-                    rules={[{required: true, message: "该项为必填项哦～"}]}
-                >
-                    <Input
-                        placeholder="简单描述一下这个机器人"
-                    ></Input>
-                </Form.Item>
-
-                <Form.Item<IBotFormEntity>
-                    label={"平台/适配器选择"}
-                    name={"adapter"}
-                    rules={[{required: true, message: "该项为必填项哦～"}]}
-                >
-                    <Select
-                        style={{width: 220}}
-                        onChange={(value) => {
-                            handleAdapterSelect(value)
-                        }}
-                        options={adapterNameList}
+            <Form {...form}>
+                <form onSubmit={form.handleSubmit(handleFormFinish)} className="space-y-6">
+                    <FormField
+                        control={form.control}
+                        name="name"
+                        rules={{ required: "该项为必填项哦～" }}
+                        render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>机器人名称</FormLabel>
+                                <FormControl>
+                                    <Input 
+                                        placeholder="为机器人取个好听的名字吧～" 
+                                        className="w-[260px]" 
+                                        {...field} 
+                                        disabled={isLoading}
+                                    />
+                                </FormControl>
+                                <FormMessage />
+                            </FormItem>
+                        )}
                     />
-                </Form.Item>
+
+                    <FormField
+                        control={form.control}
+                        name="description"
+                        rules={{ required: "该项为必填项哦～" }}
+                        render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>描述</FormLabel>
+                                <FormControl>
+                                    <Input 
+                                        placeholder="简单描述一下这个机器人" 
+                                        {...field} 
+                                        disabled={isLoading}
+                                    />
+                                </FormControl>
+                                <FormMessage />
+                            </FormItem>
+                        )}
+                    />
+
+                    <FormField
+                        control={form.control}
+                        name="adapter"
+                        rules={{ required: "该项为必填项哦～" }}
+                        render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>平台/适配器选择</FormLabel>
+                                <Select 
+                                    onValueChange={(value) => {
+                                        field.onChange(value);
+                                        handleAdapterSelect(value);
+                                    }}
+                                    value={field.value}
+                                    disabled={isLoading}
+                                >
+                                    <FormControl>
+                                        <SelectTrigger className="w-[220px]">
+                                            <SelectValue placeholder="选择一个适配器" />
+                                        </SelectTrigger>
+                                    </FormControl>
+                                    <SelectContent>
+                                        {adapterNameList.length > 0 && adapterNameList.map((item) => (
+                                            <SelectItem key={item.value} value={item.value}>
+                                                {item.label}
+                                            </SelectItem>
+                                        ))}
+                                        {adapterNameList.length === 0 && (
+                                            <SelectItem value="no-adapter">
+                                                暂无适配器
+                                            </SelectItem>
+                                        )}
+                                    </SelectContent>
+                                </Select>
+                                <FormMessage />
+                            </FormItem>
+                        )}
+                    />
+                </form>
             </Form>
             {
                 showDynamicForm &&
@@ -244,14 +303,13 @@ export default function BotForm({
                     onSubmit={onDynamicFormSubmit}
                 />
             }
-            <Space>
+            <div className="flex gap-2 mt-6">
                 {
                     !initBotId &&
                     <Button
-                        type="primary"
-                        htmlType="button"
+                        type="submit"
                         onClick={handleSubmitButton}
-                        loading={isLoading}
+                        disabled={isLoading}
                     >
                         提交
                     </Button>
@@ -259,20 +317,23 @@ export default function BotForm({
                 {
                     initBotId &&
                     <Button
-                        type="primary"
-                        htmlType="submit"
+                        type="submit"
                         onClick={handleSaveButton}
-                        loading={isLoading}
+                        disabled={isLoading}
                     >
                         保存
                     </Button>
                 }
-                <Button htmlType="button" onClick={() => {
-                    onFormCancel(form.getFieldsValue())
-                }} disabled={isLoading}>
+                <Button 
+                    variant="outline" 
+                    onClick={() => {
+                        onFormCancel(form.getValues())
+                    }} 
+                    disabled={isLoading}
+                >
                     取消
                 </Button>
-            </Space>
+            </div>
         </div>
     )
 }

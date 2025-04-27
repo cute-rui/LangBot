@@ -4,10 +4,10 @@ import {useCallback, useEffect, useState} from "react";
 import styles from "@/app/home/plugins/plugins.module.css";
 import {PluginMarketCardVO} from "@/app/home/plugins/plugin-market/plugin-market-card/PluginMarketCardVO";
 import PluginMarketCardComponent from "@/app/home/plugins/plugin-market/plugin-market-card/PluginMarketCardComponent";
-import {Input} from "antd";
+import {Input} from "@/components/ui/input";
 import {debounce} from "lodash"
 
-export default function PluginInstalledComponent () {
+export default function PluginMarketComponent () {
     const [marketPluginList, setMarketPluginList] = useState<PluginMarketCardVO[]>([])
     const [searchKeyword, setSearchKeyword] = useState("")
 
@@ -68,10 +68,14 @@ export default function PluginInstalledComponent () {
 
     return (
         <div className={`${styles.pluginListContainer}`}>
-            <Input
-                value={searchKeyword}
-                onChange={(e) => onInputSearchKeyword(e.target.value)}
-            />
+            <div className="mb-4">
+                <Input
+                    value={searchKeyword}
+                    placeholder="搜索插件..."
+                    onChange={(e) => onInputSearchKeyword(e.target.value)}
+                    className="w-full"
+                />
+            </div>
             {
                 marketPluginList.map((vo, index) => {
                     return <div key={index}>

@@ -1,7 +1,37 @@
-import {Form, Button, Switch, Select, Input, InputNumber} from "antd";
-import { CaretLeftOutlined, CaretRightOutlined } from '@ant-design/icons';
-import {useState} from "react";
-import styles from "./pipelineFormStyle.module.css"
+"use client"
+
+import { useState } from "react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
+import styles from "./pipelineFormStyle.module.css";
+import { 
+    Form,
+    FormControl,
+    FormDescription,
+    FormField,
+    FormItem,
+    FormLabel,
+    FormMessage 
+} from "@/components/ui/form";
+import { Button } from "@/components/ui/button";
+import { Switch } from "@/components/ui/switch";
+import { 
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue
+} from "@/components/ui/select";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { useForm } from "react-hook-form";
+import { z } from "zod";
+import { zodResolver } from "@hookform/resolvers/zod";
+
+// 定义表单类型
+interface FormLabel {
+    label: string;
+    name: string;
+}
 
 export default function PipelineFormComponent({
     onFinish,
@@ -10,503 +40,949 @@ export default function PipelineFormComponent({
     onFinish: () => void;
     onCancel: () => void;
 }) {
-    const [nowFormIndex, setNowFormIndex] = useState<number>(0)
-    // 这里不好，可以改成enum等
+    const [nowFormIndex, setNowFormIndex] = useState<number>(0);
+    
+    // 表单分类列表
     const formLabelList: FormLabel[] = [
         {label: "AI能力", name: "ai"},
         {label: "触发条件", name: "trigger"},
         {label: "安全能力", name: "safety"},
         {label: "输出处理", name: "output"},
-    ]
+    ];
 
+    // 定义表单验证模式
+    const formSchema = z.object({
+        runner: z.object({
+            runner: z.string().optional()
+        }).optional(),
+        "local-agent": z.object({
+            model: z.string().optional(),
+            "max-round": z.number().optional(),
+            prompt: z.string().optional()
+        }).optional(),
+        "dify-service-api": z.object({
+            "base-url": z.string().optional(),
+            "app-type": z.string().optional(),
+            "api-key": z.string().optional(),
+            "thinking-convert": z.string().optional()
+        }).optional(),
+        "dashscope-app-api": z.object({
+            "app-type": z.string().optional(),
+            "api-key": z.string().optional(),
+            "app-id": z.string().optional(),
+            "references_quote": z.string().optional()
+        }).optional(),
+        "group-respond-rules": z.object({
+            at: z.boolean().optional(),
+            prefix: z.string().optional(),
+            regexp: z.string().optional(),
+            random: z.number().optional()
+        }).optional(),
+        "access-control": z.object({
+            mode: z.string().optional(),
+            blacklist: z.string().optional(),
+            whitelist: z.string().optional()
+        }).optional(),
+        "ignore-rules": z.object({
+            whitelist: z.string().optional(),
+            regexp: z.string().optional()
+        }).optional(),
+        "content-filter": z.object({
+            scope: z.string().optional(),
+            "check-sensitive-words": z.boolean().optional()
+        }).optional(),
+        "rate-limit": z.object({
+            "window-length": z.number().optional(),
+            limitation: z.number().optional(),
+            strategy: z.string().optional()
+        }).optional(),
+        "long-text-processing": z.object({
+            threshold: z.number().optional(),
+            strategy: z.string().optional(),
+            "font-path": z.string().optional()
+        }).optional(),
+        "force-delay": z.object({
+            min: z.number().optional(),
+            max: z.number().optional()
+        }).optional(),
+        misc: z.object({
+            "hide-exception": z.boolean().optional(),
+            "at-sender": z.boolean().optional(),
+            "quote-origin": z.boolean().optional(),
+            "track-function-calls": z.boolean().optional()
+        }).optional()
+    });
+
+    // 创建表单实例
+    const form = useForm<z.infer<typeof formSchema>>({
+        resolver: zodResolver(formSchema),
+        defaultValues: {}
+    });
+
+    // 获取当前表单标签
     function getNowFormLabel() {
-        return formLabelList[nowFormIndex]
+        return formLabelList[nowFormIndex];
     }
 
-
-    function getPreFormLabel(): undefined | FormLabel {
-        if (nowFormIndex !== undefined && nowFormIndex > 0) {
-            return formLabelList[nowFormIndex - 1]
-        } else {
-            return undefined
+    // 获取上一个表单标签
+    function getPreFormLabel(): FormLabel | undefined {
+        if (nowFormIndex > 0) {
+            return formLabelList[nowFormIndex - 1];
         }
+        return undefined;
     }
 
-    function getNextFormLabel(): undefined | FormLabel {
-        if (nowFormIndex !== undefined && nowFormIndex < formLabelList.length - 1) {
-            return formLabelList[nowFormIndex + 1]
-        } else {
-            return undefined
+    // 获取下一个表单标签
+    function getNextFormLabel(): FormLabel | undefined {
+        if (nowFormIndex < formLabelList.length - 1) {
+            return formLabelList[nowFormIndex + 1];
         }
+        return undefined;
     }
 
+    // 切换到下一个表单
     function addFormLabelIndex() {
         if (nowFormIndex < formLabelList.length - 1) {
-            setNowFormIndex(nowFormIndex + 1)
+            setNowFormIndex(nowFormIndex + 1);
         }
     }
 
+    // 切换到上一个表单
     function reduceFormLabelIndex() {
         if (nowFormIndex > 0) {
-            setNowFormIndex(nowFormIndex - 1)
+            setNowFormIndex(nowFormIndex - 1);
         }
     }
 
-    return (
-        <div
-            style={{ maxHeight: '70vh', overflowY: 'auto' }}
-        >
-            <h1>
-                {getNowFormLabel().label}
-            </h1>
-            {/*  AI能力表单 ai  */}
-            <Form
-                layout={"vertical"}
-                style={{ display: getNowFormLabel().name === "ai" ? 'block' : 'none' }}
-            >
+    // 提交表单
+    function onSubmit(values: z.infer<typeof formSchema>) {
+        console.log(values);
+        onFinish();
+    }
+
+    // 渲染AI能力表单
+    const renderAIForm = () => {
+        if (getNowFormLabel().name !== "ai") return null;
+        
+        return (
+            <div>
                 {/* Runner 配置区块 */}
-                <div className={`${styles.formItemSubtitle}`}>运行器</div>
-                <Form.Item
-                    label="运行器"
-                    name={["runner", "runner"]}
-                    rules={[{ required: true }]}
-                >
-                    <Select
-                        options={[
-                            { label: "内置 Agent", value: "local-agent" },
-                            { label: "Dify 服务 API", value: "dify-service-api" },
-                            { label: "阿里云百炼平台 API", value: "dashscope-app-api" }
-                        ]}
-                    />
-                </Form.Item>
+                <div className={styles.formItemSubtitle}>运行器</div>
+                <FormField
+                    control={form.control}
+                    name="runner.runner"
+                    render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>运行器</FormLabel>
+                            <Select 
+                                onValueChange={field.onChange} 
+                                defaultValue={field.value}
+                            >
+                                <FormControl>
+                                    <SelectTrigger>
+                                        <SelectValue placeholder="请选择运行器" />
+                                    </SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                    <SelectItem value="local-agent">内置 Agent</SelectItem>
+                                    <SelectItem value="dify-service-api">Dify 服务 API</SelectItem>
+                                    <SelectItem value="dashscope-app-api">阿里云百炼平台 API</SelectItem>
+                                </SelectContent>
+                            </Select>
+                            <FormMessage />
+                        </FormItem>
+                    )}
+                />
 
                 {/* 内置 Agent 配置区块 */}
-                <div className={`${styles.formItemSubtitle}`}>配置内置Agent</div>
-                {/*  TODO 这里要拉模型  */}
-                <Form.Item
-                    label="模型"
-                    name={["local-agent", "model"]}
-                    rules={[{ required: true }]}
-                    tooltip="从模型库中选择"
-                >
-                    <Select
-                        options={[]}
-                        placeholder="请选择语言模型"
-                        showSearch
-                    />
-                </Form.Item>
-                <Form.Item
-                    label="最大回合数"
-                    name={["local-agent", "max-round"]}
-                    rules={[{
-                        required: true,
-                    }]}
-                >
-                    <InputNumber
-                        precision={0}
-                    />
-                </Form.Item>
-                {/*  TODO 这里要做转换处理  */}
-                <Form.Item
-                    label="提示词"
-                    name={["local-agent", "prompt"]}
-                    rules={[{ required: true }]}
-                    tooltip="按JSON格式输入"
-                >
-                    <Input.TextArea
-                        rows={4}
-                        placeholder={`示例结构：{ "role": "user", "content": "你好" } `}
-                    />
-                </Form.Item>
+                <div className={styles.formItemSubtitle}>配置内置Agent</div>
+                <FormField
+                    control={form.control}
+                    name="local-agent.model"
+                    render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>模型</FormLabel>
+                            <Select 
+                                onValueChange={field.onChange} 
+                                defaultValue={field.value}
+                            >
+                                <FormControl>
+                                    <SelectTrigger>
+                                        <SelectValue placeholder="请选择语言模型" />
+                                    </SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                    {/* 这里需要填充模型选项 */}
+                                </SelectContent>
+                            </Select>
+                            <FormDescription>从模型库中选择</FormDescription>
+                            <FormMessage />
+                        </FormItem>
+                    )}
+                />
+
+                <FormField
+                    control={form.control}
+                    name="local-agent.max-round"
+                    render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>最大回合数</FormLabel>
+                            <FormControl>
+                                <Input
+                                    type="number"
+                                    value={field.value?.toString() || ""}
+                                    onChange={e => field.onChange(parseInt(e.target.value))}
+                                />
+                            </FormControl>
+                            <FormMessage />
+                        </FormItem>
+                    )}
+                />
+
+                <FormField
+                    control={form.control}
+                    name="local-agent.prompt"
+                    render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>提示词</FormLabel>
+                            <FormControl>
+                                <Textarea
+                                    rows={4}
+                                    placeholder={`示例结构：{ "role": "user", "content": "你好" } `}
+                                    {...field}
+                                />
+                            </FormControl>
+                            <FormDescription>按JSON格式输入</FormDescription>
+                            <FormMessage />
+                        </FormItem>
+                    )}
+                />
 
                 {/* Dify 服务 API 区块 */}
-                <div className={`${styles.formItemSubtitle}`}>配置Dify服务API</div>
-                <Form.Item
-                    label="基础 URL"
-                    name={["dify-service-api", "base-url"]}
-                    rules={[
-                        { required: true },
-                        { type: 'url', message: '请输入有效的URL地址' }
-                    ]}
-                >
-                    <Input/>
-                </Form.Item>
-                <Form.Item
-                    label="应用类型"
-                    name={["dify-service-api", "app-type"]}
-                    initialValue={"chat"}
-                    rules={[{ required: true }]}
-                >
-                    <Select
-                        options={[
-                            { label: "聊天（包括Chatflow）", value: "chat" },
-                            { label: "Agent", value: "agent" },
-                            { label: "工作流", value: "workflow" }
-                        ]}
-                    />
-                </Form.Item>
-                <Form.Item
-                    label="API 密钥"
-                    name={["dify-service-api", "api-key"]}
-                    rules={[{ required: true }]}
-                >
-                    <Input.Password visibilityToggle={false} />
-                </Form.Item>
-                <Form.Item
-                    label="思维链转换"
-                    name={["dify-service-api", "thinking-convert"]}
-                    rules={[{ required: true }]}
-                >
-                    <Select
-                        options={[
-                            { label: "转换成 \<think\>...\<\/think\>", value: "plain" },
-                            { label: "原始", value: "original" },
-                            { label: "移除", value: "remove" }
-                        ]}
-                    />
-                </Form.Item>
+                <div className={styles.formItemSubtitle}>配置Dify服务API</div>
+                <FormField
+                    control={form.control}
+                    name="dify-service-api.base-url"
+                    render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>基础 URL</FormLabel>
+                            <FormControl>
+                                <Input {...field} />
+                            </FormControl>
+                            <FormMessage />
+                        </FormItem>
+                    )}
+                />
+
+                <FormField
+                    control={form.control}
+                    name="dify-service-api.app-type"
+                    render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>应用类型</FormLabel>
+                            <Select 
+                                onValueChange={field.onChange} 
+                                defaultValue={field.value || "chat"}
+                            >
+                                <FormControl>
+                                    <SelectTrigger>
+                                        <SelectValue placeholder="选择应用类型" />
+                                    </SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                    <SelectItem value="chat">聊天（包括Chatflow）</SelectItem>
+                                    <SelectItem value="agent">Agent</SelectItem>
+                                    <SelectItem value="workflow">工作流</SelectItem>
+                                </SelectContent>
+                            </Select>
+                            <FormMessage />
+                        </FormItem>
+                    )}
+                />
+
+                <FormField
+                    control={form.control}
+                    name="dify-service-api.api-key"
+                    render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>API 密钥</FormLabel>
+                            <FormControl>
+                                <Input type="password" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                        </FormItem>
+                    )}
+                />
+
+                <FormField
+                    control={form.control}
+                    name="dify-service-api.thinking-convert"
+                    render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>思维链转换</FormLabel>
+                            <Select 
+                                onValueChange={field.onChange} 
+                                defaultValue={field.value}
+                            >
+                                <FormControl>
+                                    <SelectTrigger>
+                                        <SelectValue placeholder="选择转换方式" />
+                                    </SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                    <SelectItem value="plain">转换成 {`<think>...</think>`}</SelectItem>
+                                    <SelectItem value="original">原始</SelectItem>
+                                    <SelectItem value="remove">移除</SelectItem>
+                                </SelectContent>
+                            </Select>
+                            <FormMessage />
+                        </FormItem>
+                    )}
+                />
 
                 {/* 阿里云百炼区块 */}
-                <div className={`${styles.formItemSubtitle}`}>配置阿里云百炼平台 API</div>
-                <Form.Item
-                    label="应用类型"
-                    name={["dashscope-app-api", "app-type"]}
-                    rules={[{ required: true }]}
-                >
-                    <Select
-                        options={[
-                            { label: "Agent", value: "agent" },
-                            { label: "工作流", value: "workflow" }
-                        ]}
-                    />
-                </Form.Item>
-                <Form.Item
-                    label="API 密钥"
-                    name={["dashscope-app-api", "api-key"]}
-                    rules={[{ required: true }]}
-                >
-                    <Input.Password visibilityToggle={false} />
-                </Form.Item>
-                <Form.Item
-                    label="应用 ID"
-                    name={["dashscope-app-api", "app-id"]}
-                    rules={[
-                        { required: true },
-                    ]}
-                >
-                    <Input />
-                </Form.Item>
-                <Form.Item
-                    label="引用文本"
-                    name={["dashscope-app-api", "references_quote"]}
-                    initialValue={"参考资料来自:"}
-                >
-                    <Input.TextArea rows={2} />
-                </Form.Item>
-            </Form>
+                <div className={styles.formItemSubtitle}>配置阿里云百炼平台 API</div>
+                <FormField
+                    control={form.control}
+                    name="dashscope-app-api.app-type"
+                    render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>应用类型</FormLabel>
+                            <Select 
+                                onValueChange={field.onChange} 
+                                defaultValue={field.value}
+                            >
+                                <FormControl>
+                                    <SelectTrigger>
+                                        <SelectValue placeholder="选择应用类型" />
+                                    </SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                    <SelectItem value="agent">Agent</SelectItem>
+                                    <SelectItem value="workflow">工作流</SelectItem>
+                                </SelectContent>
+                            </Select>
+                            <FormMessage />
+                        </FormItem>
+                    )}
+                />
 
-            {/*  触发条件表单 trigger */}
-            <Form
-                layout={"vertical"}
-                style={{ display: getNowFormLabel().name === "trigger" ? 'block' : 'none' }}
-            >
+                <FormField
+                    control={form.control}
+                    name="dashscope-app-api.api-key"
+                    render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>API 密钥</FormLabel>
+                            <FormControl>
+                                <Input type="password" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                        </FormItem>
+                    )}
+                />
+
+                <FormField
+                    control={form.control}
+                    name="dashscope-app-api.app-id"
+                    render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>应用 ID</FormLabel>
+                            <FormControl>
+                                <Input {...field} />
+                            </FormControl>
+                            <FormMessage />
+                        </FormItem>
+                    )}
+                />
+
+                <FormField
+                    control={form.control}
+                    name="dashscope-app-api.references_quote"
+                    render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>引用文本</FormLabel>
+                            <FormControl>
+                                <Textarea rows={2} defaultValue="参考资料来自:" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                        </FormItem>
+                    )}
+                />
+            </div>
+        );
+    };
+
+    // 渲染触发条件表单
+    const renderTriggerForm = () => {
+        if (getNowFormLabel().name !== "trigger") return null;
+        
+        return (
+            <div>
                 {/* 群响应规则块 */}
-                <div className={`${styles.formItemSubtitle}`}> 群响应规则 </div>
-                <Form.Item
-                    label={"是否在消息@机器人时触发"}
-                    name={["group-respond-rules", "at"]}
-                    rules={[{ required: true }]}
-                >
-                    <Switch />
-                </Form.Item>
-                <Form.Item
-                    label={"消息前缀"}
-                    name={["group-respond-rules", "prefix"]}
-                    rules={[{ required: true }]}
-                >
-                    <Select
-                        options={[
-                            { value: "\"type\": \"string\"", label: "\"type\": \"string\"" },
-                        ]}
-                    />
-                </Form.Item>
-                <Form.Item
-                    label={"正则表达式"}
-                    name={["group-respond-rules", "regexp"]}
-                    rules={[{ required: true }]}
-                >
-                    <Select
-                        mode="tags"
-                        options={[]}
-                    />
-                </Form.Item>
-                <Form.Item
-                    label={"随机"}
-                    name={["group-respond-rules", "random"]}
-                    rules={[{ required: false }]}
-                >
-                    <InputNumber
-                        max={1}
-                        min={0}
-                        step={0.05}
-                    />
-                </Form.Item>
-                <div className={`${styles.formItemSubtitle}`}> 访问控制 </div>
-                <Form.Item
-                    label={"模式"}
-                    name={["access-control", "mode"]}
-                    rules={[{ required: true }]}
-                    tooltip={"访问控制模式"}
-                >
-                    <Select
-                        options={[
-                            {label: "黑名单", value: "blacklist"},
-                            {label: "白名单", value: "Whitelist"},
-                        ]}
-                    />
-                </Form.Item>
+                <div className={styles.formItemSubtitle}>群响应规则</div>
+                <FormField
+                    control={form.control}
+                    name="group-respond-rules.at"
+                    render={({ field }) => (
+                        <FormItem className="flex items-center gap-2 space-y-0">
+                            <FormLabel>是否在消息@机器人时触发</FormLabel>
+                            <FormControl>
+                                <Switch 
+                                    checked={field.value} 
+                                    onCheckedChange={field.onChange}
+                                />
+                            </FormControl>
+                            <FormMessage />
+                        </FormItem>
+                    )}
+                />
 
-                <Form.Item
-                    label={"黑名单"}
-                    name={["access-control", "blacklist"]}
-                    rules={[{ required: true }]}
-                >
-                    <Select
-                        mode={"tags"}
-                        options={[]}
-                    />
-                </Form.Item>
+                <FormField
+                    control={form.control}
+                    name="group-respond-rules.prefix"
+                    render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>消息前缀</FormLabel>
+                            <Select 
+                                onValueChange={field.onChange} 
+                                defaultValue={field.value}
+                            >
+                                <FormControl>
+                                    <SelectTrigger>
+                                        <SelectValue placeholder="选择前缀" />
+                                    </SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                    <SelectItem value={`"type": "string"`}>&quot;type&quot;: &quot;string&quot;</SelectItem>
+                                </SelectContent>
+                            </Select>
+                            <FormMessage />
+                        </FormItem>
+                    )}
+                />
 
-                <Form.Item
-                    label={"白名单"}
-                    name={["access-control", "whitelist"]}
-                    rules={[{ required: true }]}
-                >
-                    <Select
-                        mode={"tags"}
-                        options={[]}
-                    />
-                </Form.Item>
+                <FormField
+                    control={form.control}
+                    name="group-respond-rules.regexp"
+                    render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>正则表达式</FormLabel>
+                            <Select 
+                                onValueChange={field.onChange} 
+                                defaultValue={field.value}
+                            >
+                                <FormControl>
+                                    <SelectTrigger>
+                                        <SelectValue placeholder="选择正则表达式" />
+                                    </SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                    {/* 这里需要填充正则表达式选项 */}
+                                </SelectContent>
+                            </Select>
+                            <FormMessage />
+                        </FormItem>
+                    )}
+                />
 
-                <div className={`${styles.formItemSubtitle}`}> 消息忽略规则 </div>
+                <FormField
+                    control={form.control}
+                    name="group-respond-rules.random"
+                    render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>随机</FormLabel>
+                            <FormControl>
+                                <Input
+                                    type="number"
+                                    value={field.value?.toString() || ""}
+                                    onChange={e => field.onChange(parseFloat(e.target.value))}
+                                    max={1}
+                                    min={0}
+                                    step={0.05}
+                                />
+                            </FormControl>
+                            <FormMessage />
+                        </FormItem>
+                    )}
+                />
 
-                <Form.Item
-                    label={"前缀"}
-                    name={["ignore-rules", "whitelist"]}
-                    rules={[{ required: true }]}
-                    tooltip={"消息前缀"}
-                >
-                    <Select
-                        mode={"tags"}
-                        options={[]}
-                    />
-                </Form.Item>
+                <div className={styles.formItemSubtitle}>访问控制</div>
+                <FormField
+                    control={form.control}
+                    name="access-control.mode"
+                    render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>模式</FormLabel>
+                            <Select 
+                                onValueChange={field.onChange} 
+                                defaultValue={field.value}
+                            >
+                                <FormControl>
+                                    <SelectTrigger>
+                                        <SelectValue placeholder="选择访问控制模式" />
+                                    </SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                    <SelectItem value="blacklist">黑名单</SelectItem>
+                                    <SelectItem value="Whitelist">白名单</SelectItem>
+                                </SelectContent>
+                            </Select>
+                            <FormMessage />
+                        </FormItem>
+                    )}
+                />
 
-                <Form.Item
-                    label={"正则表达式"}
-                    name={["ignore-rules", "regexp"]}
-                    rules={[{ required: true }]}
-                    tooltip={"消息正则表达式"}
-                >
-                    <Select
-                        mode={"tags"}
-                        options={[]}
-                    />
-                </Form.Item>
-            </Form>
+                <FormField
+                    control={form.control}
+                    name="access-control.blacklist"
+                    render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>黑名单</FormLabel>
+                            <Select 
+                                onValueChange={field.onChange} 
+                                defaultValue={field.value}
+                            >
+                                <FormControl>
+                                    <SelectTrigger>
+                                        <SelectValue placeholder="选择黑名单" />
+                                    </SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                    {/* 这里需要填充黑名单选项 */}
+                                </SelectContent>
+                            </Select>
+                            <FormMessage />
+                        </FormItem>
+                    )}
+                />
 
-            {/*  安全控制表单 safety  */}
-            <Form
-                layout={"vertical"}
-                style={{ display: getNowFormLabel().name === "safety" ? 'block' : 'none' }}
-            >
-                {/* 内容过滤块 content-filter */}
-                <div className={`${styles.formItemSubtitle}`}> 内容过滤 </div>
-                <Form.Item
-                    label={"检查范围"}
-                    name={["content-filter", "scope"]}
-                    rules={[{ required: true }]}
-                >
-                    <Select
-                        options={[
-                            {label: "全部", value: "all"},
-                            {label: "传入消息（用户消息）", value: "income-msg"},
-                            {label: "传出消息（机器人消息）", value: "output-msg"},
-                        ]}
-                    />
-                </Form.Item>
+                <FormField
+                    control={form.control}
+                    name="access-control.whitelist"
+                    render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>白名单</FormLabel>
+                            <Select 
+                                onValueChange={field.onChange} 
+                                defaultValue={field.value}
+                            >
+                                <FormControl>
+                                    <SelectTrigger>
+                                        <SelectValue placeholder="选择白名单" />
+                                    </SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                    {/* 这里需要填充白名单选项 */}
+                                </SelectContent>
+                            </Select>
+                            <FormMessage />
+                        </FormItem>
+                    )}
+                />
 
-                <Form.Item
-                    label={"检查敏感词"}
-                    name={["content-filter", "check-sensitive-words"]}
-                    rules={[{ required: true }]}
-                >
-                    <Switch/>
-                </Form.Item>
+                <div className={styles.formItemSubtitle}>消息忽略规则</div>
 
-                {/* 速率限制块 rate-limit */}
-                <div className={`${styles.formItemSubtitle}`}> 速率限制 </div>
-                <Form.Item
-                    label={"窗口长度（秒）"}
-                    name={["rate-limit", "window-length"]}
-                    rules={[{ required: true }]}
-                    initialValue={60}
-                >
-                    <InputNumber></InputNumber>
-                </Form.Item>
-                <Form.Item
-                    label={"限制次数"}
-                    name={["rate-limit", "limitation"]}
-                    rules={[{ required: true }]}
-                    initialValue={60}
-                >
-                    <InputNumber/>
-                </Form.Item>
-                <Form.Item
-                    label={"策略"}
-                    name={["rate-limit", "strategy"]}
-                    rules={[{ required: true }]}
-                    initialValue={"drop"}
-                >
-                    <Select
-                        options={[
-                            {label: "丢弃", value: "drop"},
-                            {label: "等待", value: "wait"},
-                        ]}
-                    />
-                </Form.Item>
+                <FormField
+                    control={form.control}
+                    name="ignore-rules.whitelist"
+                    render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>前缀</FormLabel>
+                            <Select 
+                                onValueChange={field.onChange} 
+                                defaultValue={field.value}
+                            >
+                                <FormControl>
+                                    <SelectTrigger>
+                                        <SelectValue placeholder="选择前缀" />
+                                    </SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                    {/* 这里需要填充前缀选项 */}
+                                </SelectContent>
+                            </Select>
+                            <FormMessage />
+                        </FormItem>
+                    )}
+                />
 
-            </Form>
+                <FormField
+                    control={form.control}
+                    name="ignore-rules.regexp"
+                    render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>正则表达式</FormLabel>
+                            <Select 
+                                onValueChange={field.onChange} 
+                                defaultValue={field.value}
+                            >
+                                <FormControl>
+                                    <SelectTrigger>
+                                        <SelectValue placeholder="选择正则表达式" />
+                                    </SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                    {/* 这里需要填充正则表达式选项 */}
+                                </SelectContent>
+                            </Select>
+                            <FormMessage />
+                        </FormItem>
+                    )}
+                />
+            </div>
+        );
+    };
 
-            {/*  输出处理控制表单 output  */}
-            <Form
-                layout={"vertical"}
-                style={{ display: getNowFormLabel().name === "output" ? 'block' : 'none' }}
-            >
+    // 渲染安全控制表单
+    const renderSafetyForm = () => {
+        if (getNowFormLabel().name !== "safety") return null;
+        
+        return (
+            <div>
+                {/* 内容过滤块 */}
+                <div className={styles.formItemSubtitle}>内容过滤</div>
+                <FormField
+                    control={form.control}
+                    name="content-filter.scope"
+                    render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>检查范围</FormLabel>
+                            <Select 
+                                onValueChange={field.onChange} 
+                                defaultValue={field.value}
+                            >
+                                <FormControl>
+                                    <SelectTrigger>
+                                        <SelectValue placeholder="选择检查范围" />
+                                    </SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                    <SelectItem value="all">全部</SelectItem>
+                                    <SelectItem value="income-msg">传入消息（用户消息）</SelectItem>
+                                    <SelectItem value="output-msg">传出消息（机器人消息）</SelectItem>
+                                </SelectContent>
+                            </Select>
+                            <FormMessage />
+                        </FormItem>
+                    )}
+                />
+
+                <FormField
+                    control={form.control}
+                    name="content-filter.check-sensitive-words"
+                    render={({ field }) => (
+                        <FormItem className="flex items-center gap-2 space-y-0">
+                            <FormLabel>检查敏感词</FormLabel>
+                            <FormControl>
+                                <Switch 
+                                    checked={field.value} 
+                                    onCheckedChange={field.onChange}
+                                />
+                            </FormControl>
+                            <FormMessage />
+                        </FormItem>
+                    )}
+                />
+
+                {/* 速率限制块 */}
+                <div className={styles.formItemSubtitle}>速率限制</div>
+                <FormField
+                    control={form.control}
+                    name="rate-limit.window-length"
+                    render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>窗口长度（秒）</FormLabel>
+                            <FormControl>
+                                <Input
+                                    type="number"
+                                    value={field.value?.toString() || ""}
+                                    onChange={e => field.onChange(parseInt(e.target.value))}
+                                    max={60}
+                                    min={0}
+                                />
+                            </FormControl>
+                            <FormMessage />
+                        </FormItem>
+                    )}
+                />
+
+                <FormField
+                    control={form.control}
+                    name="rate-limit.limitation"
+                    render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>限制次数</FormLabel>
+                            <FormControl>
+                                <Input
+                                    type="number"
+                                    value={field.value?.toString() || ""}
+                                    onChange={e => field.onChange(parseInt(e.target.value))}
+                                    max={60}
+                                    min={0}
+                                />
+                            </FormControl>
+                            <FormMessage />
+                        </FormItem>
+                    )}
+                />
+
+                <FormField
+                    control={form.control}
+                    name="rate-limit.strategy"
+                    render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>策略</FormLabel>
+                            <FormControl>
+                                <Select 
+                                    onValueChange={field.onChange} 
+                                    defaultValue={field.value}
+                                >
+                                    <FormControl>
+                                        <SelectTrigger>
+                                            <SelectValue placeholder="选择策略" />
+                                        </SelectTrigger>
+                                    </FormControl>
+                                    <SelectContent>
+                                        <SelectItem value="drop">丢弃</SelectItem>
+                                        <SelectItem value="wait">等待</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </FormControl>
+                            <FormMessage />
+                        </FormItem>
+                    )}
+                />
+            </div>
+        );
+    };
+
+    // 渲染输出处理表单
+    const renderOutputForm = () => {
+        if (getNowFormLabel().name !== "output") return null;
+        
+        return (
+            <div>
                 {/* 长文本处理区块 */}
-                <div className={`${styles.formItemSubtitle}`}> 长文本处理 </div>
-                <Form.Item
-                    label="阈值"
-                    name={["long-text-processing", "threshold"]}
-                    rules={[{ required: true }]}
-                >
-                    <InputNumber />
-                </Form.Item>
-                <Form.Item
-                    label="策略"
-                    name={["long-text-processing", "strategy"]}
-                    rules={[{ required: true }]}
-                >
-                    <Select
-                        options={[
-                            { label: "转发消息组件", value: "forward" },
-                            { label: "转换为图片", value: "image" }
-                        ]}
-                    />
-                </Form.Item>
-                <Form.Item
-                    label="字体路径"
-                    name={["long-text-processing", "font-path"]}
-                    rules={[{ required: true }]}
-                >
-                    <Input />
-                </Form.Item>
+                <div className={styles.formItemSubtitle}>长文本处理</div>
+                <FormField
+                    control={form.control}
+                    name="long-text-processing.threshold"
+                    render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>阈值</FormLabel>
+                            <FormControl>
+                                <Input
+                                    type="number"
+                                    value={field.value?.toString() || ""}
+                                    onChange={e => field.onChange(parseInt(e.target.value))}
+                                />
+                            </FormControl>
+                            <FormMessage />
+                        </FormItem>
+                    )}
+                />
+
+                <FormField
+                    control={form.control}
+                    name="long-text-processing.strategy"
+                    render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>策略</FormLabel>
+                            <Select 
+                                onValueChange={field.onChange} 
+                                defaultValue={field.value}
+                            >
+                                <FormControl>
+                                    <SelectTrigger>
+                                        <SelectValue placeholder="选择策略" />
+                                    </SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                    <SelectItem value="forward">转发消息组件</SelectItem>
+                                    <SelectItem value="image">转换为图片</SelectItem>
+                                </SelectContent>
+                            </Select>
+                            <FormMessage />
+                        </FormItem>
+                    )}
+                />
+
+                <FormField
+                    control={form.control}
+                    name="long-text-processing.font-path"
+                    render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>字体路径</FormLabel>
+                            <FormControl>
+                                <Input {...field} />
+                            </FormControl>
+                            <FormMessage />
+                        </FormItem>
+                    )}
+                />
 
                 {/* 强制延迟区块 */}
-                <div className={`${styles.formItemSubtitle}`}> 强制延迟 </div>
-                <Form.Item
-                    label="最小秒数"
-                    name={["force-delay", "min"]}
-                    rules={[{ required: true }]}
-                >
-                    <InputNumber />
-                </Form.Item>
-                <Form.Item
-                    label="最大秒数"
-                    name={["force-delay", "max"]}
-                    rules={[{ required: true }]}
-                >
-                    <InputNumber />
-                </Form.Item>
+                <div className={styles.formItemSubtitle}>强制延迟</div>
+                <FormField
+                    control={form.control}
+                    name="force-delay.min"
+                    render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>最小秒数</FormLabel>
+                            <FormControl>
+                                <Input
+                                    type="number"
+                                    value={field.value?.toString() || ""}
+                                    onChange={e => field.onChange(parseInt(e.target.value))}
+                                />
+                            </FormControl>
+                            <FormMessage />
+                        </FormItem>
+                    )}
+                />
+
+                <FormField
+                    control={form.control}
+                    name="force-delay.max"
+                    render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>最大秒数</FormLabel>
+                            <FormControl>
+                                <Input
+                                    type="number"
+                                    value={field.value?.toString() || ""}
+                                    onChange={e => field.onChange(parseInt(e.target.value))}
+                                />
+                            </FormControl>
+                            <FormMessage />
+                        </FormItem>
+                    )}
+                />
 
                 {/* 杂项区块 */}
-                <div className={`${styles.formItemSubtitle}`}> 杂项 </div>
-                <Form.Item
-                    label="不输出异常信息给用户"
-                    name={["misc", "hide-exception"]}
-                    rules={[{ required: true }]}
-                    valuePropName="checked"
-                >
-                    <Switch />
-                </Form.Item>
-                <Form.Item
-                    label="在回复中@发送者"
-                    name={["misc", "at-sender"]}
-                    rules={[{ required: true }]}
-                    valuePropName="checked"
-                >
-                    <Switch />
-                </Form.Item>
-                <Form.Item
-                    label="引用原文"
-                    name={["misc", "quote-origin"]}
-                    rules={[{ required: true }]}
-                    valuePropName="checked"
-                >
-                    <Switch />
-                </Form.Item>
-                <Form.Item
-                    label="跟踪函数调用"
-                    name={["misc", "track-function-calls"]}
-                    rules={[{ required: true }]}
-                    valuePropName="checked"
-                >
-                    <Switch />
-                </Form.Item>
+                <div className={styles.formItemSubtitle}>杂项</div>
+                <FormField
+                    control={form.control}
+                    name="misc.hide-exception"
+                    render={({ field }) => (
+                        <FormItem className="flex items-center gap-2 space-y-0">
+                            <FormLabel>不输出异常信息给用户</FormLabel>
+                            <FormControl>
+                                <Switch 
+                                    checked={field.value} 
+                                    onCheckedChange={field.onChange}
+                                />
+                            </FormControl>
+                            <FormMessage />
+                        </FormItem>
+                    )}
+                />
+
+                <FormField
+                    control={form.control}
+                    name="misc.at-sender"
+                    render={({ field }) => (
+                        <FormItem className="flex items-center gap-2 space-y-0">
+                            <FormLabel>在回复中@发送者</FormLabel>
+                            <FormControl>
+                                <Switch 
+                                    checked={field.value} 
+                                    onCheckedChange={field.onChange}
+                                />
+                            </FormControl>
+                            <FormMessage />
+                        </FormItem>
+                    )}
+                />
+
+                <FormField
+                    control={form.control}
+                    name="misc.quote-origin"
+                    render={({ field }) => (
+                        <FormItem className="flex items-center gap-2 space-y-0">
+                            <FormLabel>引用原文</FormLabel>
+                            <FormControl>
+                                <Switch 
+                                    checked={field.value} 
+                                    onCheckedChange={field.onChange}
+                                />
+                            </FormControl>
+                            <FormMessage />
+                        </FormItem>
+                    )}
+                />
+
+                <FormField
+                    control={form.control}
+                    name="misc.track-function-calls"
+                    render={({ field }) => (
+                        <FormItem className="flex items-center gap-2 space-y-0">
+                            <FormLabel>跟踪函数调用</FormLabel>
+                            <FormControl>
+                                <Switch 
+                                    checked={field.value} 
+                                    onCheckedChange={field.onChange}
+                                />
+                            </FormControl>
+                            <FormMessage />
+                        </FormItem>
+                    )}
+                />
+            </div>
+        );
+    };
+
+    return (
+        <div style={{ maxHeight: '70vh', overflowY: 'auto' }}>
+            <h1 className="text-xl font-bold mb-4">
+                {getNowFormLabel().label}
+            </h1>
+            
+            <Form {...form}>
+                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                    {renderAIForm()}
+                    {renderTriggerForm()}
+                    {renderSafetyForm()}
+                    {renderOutputForm()}
+                </form>
             </Form>
 
-            <div className={`${styles.changeFormButtonGroupContainer}`}>
+            <div className={`${styles.changeFormButtonGroupContainer} mt-6 flex justify-between`}>
                 <Button
-                    type="primary"
-                    icon={<CaretLeftOutlined/>}
+                    variant="outline"
                     onClick={reduceFormLabelIndex}
                     disabled={!getPreFormLabel()}
                 >
+                    <ChevronLeft className="mr-2 h-4 w-4" />
                     {getPreFormLabel()?.label || "暂无更多"}
                 </Button>
-                <Button
-                    type="primary"
-                    icon={<CaretRightOutlined />}
-                    onClick={addFormLabelIndex}
-                    disabled={!getNextFormLabel()}
-                    iconPosition={"end"}
-                >
-                    {getNextFormLabel()?.label || "暂无更多"}
-                </Button>
-
-                <Button
-                    type="primary"
-                    onClick={addFormLabelIndex}
-                >
-                    提交
-                </Button>
+                
+                <div className="flex gap-2">
+                    <Button
+                        variant="outline" 
+                        onClick={onCancel}
+                    >
+                        取消
+                    </Button>
+                    
+                    {nowFormIndex === formLabelList.length - 1 ? (
+                        <Button 
+                            onClick={form.handleSubmit(onSubmit)}
+                        >
+                            提交
+                        </Button>
+                    ) : (
+                        <Button
+                            onClick={addFormLabelIndex}
+                            disabled={!getNextFormLabel()}
+                        >
+                            {getNextFormLabel()?.label || "暂无更多"}
+                            <ChevronRight className="ml-2 h-4 w-4" />
+                        </Button>
+                    )}
+                </div>
             </div>
-
         </div>
-    )
+    );
 }
 
-enum PipelineFormRoute {
-
-}
-
-interface FormPageLabel {
-    formIndex: number,
-    formName: string,
-    formLabel: string,
-}
-
-interface FormLabel {
-    label: string,
-    name: string,
-}

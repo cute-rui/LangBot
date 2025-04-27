@@ -1,12 +1,12 @@
-.sidebarContainer {
-    box-sizing: border-box;
+/* .sidebarContainer {
+     box-sizing: border-box; 
     width: 240px;
     height: 100vh;
     background-color: #FFF;
-    display: flex;
+     display: flex;
     flex-direction: column;
-    align-items: center;
-}
+    align-items: center; 
+} */
 
 .langbotIconContainer {
     width: 240px;
